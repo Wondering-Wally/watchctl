@@ -16,11 +16,14 @@ pub fn for_status(status: &str) -> u8 {
         | "NO_PENDING_ACTIVATION"
         | "NO_PENDING_SETUP"
         | "NO_PAIR"
-        | "AMBIGUOUS_DEVICE" => INVALID,
-        "BUSY" => BUSY,
-        "UNAVAILABLE" | "CORE_UNAVAILABLE" | "ADAPTER_UNAVAILABLE" | "DAEMON_UNREACHABLE" => {
-            UNAVAILABLE
-        }
+        | "AMBIGUOUS_DEVICE"
+        | "ADAPTER_REQUIRED" => INVALID,
+        "BUSY" | "ADAPTER_LOADING" => BUSY,
+        "UNAVAILABLE"
+        | "CORE_UNAVAILABLE"
+        | "ADAPTER_UNAVAILABLE"
+        | "ADAPTER_DISCOVERY_FAILED"
+        | "DAEMON_UNREACHABLE" => UNAVAILABLE,
         "TIMEOUT" => TIMEOUT,
         _ => FAILED,
     }
