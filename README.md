@@ -104,6 +104,19 @@ Errors in JSON mode are `{"status":"<STATUS>","error":"<message>"}`.
 | 5 | failed or rejected by the Watch |
 | 6 | timeout |
 
+## Tests
+
+```sh
+cargo test                 # unit tests (dispatch allowlist, socket server, formatting, exit codes)
+tests/fake_host/run.sh     # end-to-end: watchctl + watchctld + the real LinuxBackend
+```
+
+`tests/fake_host` puts a fake `java` (protocol host), a fake `busctl` (BlueZ) and an
+empty HCI broker on `PATH`. The real backend then runs scan, a wrong-PIN pair
+attempt, a successful pair to `OPERATIONAL`, busy rejection, disconnect, reconnect
+and daemon shutdown. This tests the CLI and backend wiring only. It is not a
+substitute for a real Watch.
+
 ## Security
 
 - The socket is created with mode `0600`, the daemon only answers peers with

@@ -38,6 +38,13 @@ pub fn describe(status: &str) -> &'static str {
         "ADAPTER_UNAVAILABLE" => {
             "that Bluetooth adapter is not present (see `watchctl adapters --refresh`)"
         }
+        "ADAPTER_REQUIRED" => {
+            "several adapters found; choose one with `watchctl adapters select <address>`"
+        }
+        "ADAPTER_LOADING" => "the adapter inventory is still loading; try again",
+        "ADAPTER_DISCOVERY_FAILED" => {
+            "could not list Bluetooth adapters (is BlueZ running? see `watchctl doctor`)"
+        }
         "INVALID_REQUEST" => "invalid request",
         "UNSUPPORTED_OPERATION" => "the daemon does not support this operation",
         "UNKNOWN_DEVICE" => "that Watch is not currently discovered (run `watchctl scan`)",
@@ -61,6 +68,8 @@ mod tests {
         assert_eq!(for_status("INVALID_REQUEST"), INVALID);
         assert_eq!(for_status("UNKNOWN_DEVICE"), INVALID);
         assert_eq!(for_status("BUSY"), BUSY);
+        assert_eq!(for_status("ADAPTER_REQUIRED"), INVALID);
+        assert_eq!(for_status("ADAPTER_DISCOVERY_FAILED"), UNAVAILABLE);
         assert_eq!(for_status("UNAVAILABLE"), UNAVAILABLE);
         assert_eq!(for_status("DAEMON_UNREACHABLE"), UNAVAILABLE);
         assert_eq!(for_status("REJECTED"), FAILED);
