@@ -1,0 +1,6 @@
+#!/bin/sh
+# Fake BlueZ inventory: one powered adapter, hci0.
+case "$*" in
+  *GetManagedObjects*) printf '%s\n' '{"type":"a{oa{sa{sv}}}","data":[{"/org/bluez/hci0":{"org.bluez.Adapter1":{"Address":{"type":"s","data":"AA:BB:CC:DD:EE:01"},"Alias":{"type":"s","data":"fake-ble"},"Powered":{"type":"b","data":true}}}}]}' ;;
+  *) exit 0 ;;
+esac

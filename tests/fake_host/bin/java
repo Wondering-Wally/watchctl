@@ -1,0 +1,39 @@
+#!/bin/bash
+# Fake LinuxProtocolHost: emits the stdout events the Rust state parser reads
+# and reacts to the stdin commands LinuxBackend sends.
+[ "$1" = "-version" ] && { echo 'openjdk version "fake"' >&2; exit 0; }
+mode="${*: -1}"
+[ "$mode" = "confirm" ] || [ "${*: -2:1}" = "confirm" ] && exit 0
+WATCH=3f2c0a1e-1111-4222-8333-944455556666
+PAIR=0a0b0c0d-1111-4222-8333-944455556666
+files=""
+for arg in "$@"; do case "$arg" in -Dwatch.files=*) files="${arg#-Dwatch.files=}" ;; esac; done
+expected=123456
+[ -n "${FAKE_PIN_FILE:-}" ] && [ -f "$FAKE_PIN_FILE" ] && expected="$(cat "$FAKE_PIN_FILE")"
+echo "HAL INITIALIZED: exclusive controller ownership confirmed."
+if [ "$mode" = "resume" ]; then
+  sleep 0.5; echo "LE ACL CONNECTED: fake"; sleep 0.5
+  echo "EVENT:SETUP_COMPLETE:operational"
+else
+  selected=""
+  while [ -z "$selected" ]; do
+    echo "WATCH_DISCOVERED_V1:$WATCH:Watch7,5:26.2:-51"
+    if read -r -t 1 line; then
+      case "$line" in SELECT_DISCOVERED_WATCH_V1:*) selected=1 ;; STOP) exit 0 ;; esac
+    fi
+  done
+  echo "LE ACL CONNECTED: fake"
+  echo "PIN_REQUIRED: enter the six-digit code"
+  read -r line
+  if [ "${line#PIN:}" != "$expected" ]; then
+    echo "PIN_REQUIRED: enter the six-digit code"
+    while read -r line; do [ "$line" = "STOP" ] && exit 0; done
+    exit 0
+  fi
+  echo "LINUX_PAIR_ID_V1:$PAIR"
+  mkdir -p "$files/identity"
+  printf '{"pairId":"%s","productType":"Watch7,5","activationConfirmed":true,"protocolVerified":true}' "$PAIR" > "$files/identity/pair-public.json"
+  for phase in CONFIGURING ACTIVATING ACTIVATED SYNCING; do sleep 0.3; echo "WATCH_SETUP_PHASE_V1:$phase"; done
+  echo "EVENT:SETUP_COMPLETE:operational"
+fi
+while read -r line; do [ "$line" = "STOP" ] && exit 0; done
