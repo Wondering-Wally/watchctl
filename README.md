@@ -1,5 +1,7 @@
 # watchctl
 
+An experimental CLI for Apple Watch on Linux, for security research purposes.
+
 A command-line front end for the Linux desktop backend of
 [LordixDemon/apple_watch_connector](https://github.com/LordixDemon/apple_watch_connector).
 It drives the same `LinuxBackend` JSON commands the Flutter companion uses:
@@ -128,6 +130,7 @@ substitute for a real Watch.
 
 ## License
 
-No license has been chosen for this repository yet. The upstream project has no
-license file, so redistribute builds that include it only with the upstream
-author's permission.
+watchctl's own code is licensed under the Apache License 2.0 (see `LICENSE`).
+The upstream apple_watch_connector project, which is pulled in as a dependency at
+build time, has no license file. Its code is not covered by this license, so only
+redistribute builds that include it with the upstream author's permission.
