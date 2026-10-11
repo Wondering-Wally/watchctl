@@ -1,3 +1,8 @@
+None of this is my own work. I barely did anything, I need to test this. It's a WIP. 
+
+Full effort goes to "https://github.com/LordixDemon/apple_watch_connector"
+
+
 # watchctl
 
 An experimental CLI for Apple Watch on Linux, for security research purposes.
