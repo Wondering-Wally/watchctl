@@ -11,7 +11,7 @@ use std::{
 use watchctl::{
     exit,
     format::{self, Tracker},
-    ipc,
+    identify, ipc,
     paths::{self, Paths},
 };
 
@@ -52,6 +52,16 @@ enum Cmd {
         /// Leave discovery running afterwards (so `pair` can reuse it)
         #[arg(long)]
         keep: bool,
+    },
+    /// Report the model and watchOS of nearby Watches in setup mode, and whether
+    /// upstream can pair them. Passive BlueZ scan; needs no daemon and pairs nothing.
+    Identify {
+        /// Seconds to listen
+        #[arg(long, default_value_t = 15)]
+        timeout: u64,
+        /// Do not save the capture to a run directory
+        #[arg(long)]
+        no_save: bool,
     },
     /// Discover, connect, submit the six-digit code and wait for activation
     Pair {
@@ -330,6 +340,64 @@ fn scan(ctx: &mut Ctx, timeout: u64, keep: bool) -> Res {
     ctx.emit(&json!({"type":"summary","devices":devices}), || {
         format!("found {} Watch(es)", devices.len())
     });
+    Ok(())
+}
+
+fn identify_cmd(ctx: &Ctx, timeout: u64, save: bool) -> Res {
+    let started = format::now_ms();
+    if !ctx.json {
+        eprintln!(
+            "listening {timeout}s for Watches in setup mode (open the pairing screen on the Watch)"
+        );
+    }
+    let found = identify::scan(Duration::from_secs(timeout), |_| {})
+        .map_err(|e| fail(ctx.json, "UNAVAILABLE", &e))?;
+    let run = if save {
+        let path = identify::record(&Paths::resolve(), started, &found).map_err(|e| {
+            fail(
+                ctx.json,
+                "FAILED",
+                &format!("could not save the capture: {e}"),
+            )
+        })?;
+        Some(path.display().to_string())
+    } else {
+        None
+    };
+    for watch in &found {
+        if ctx.json {
+            out(&json!({"type":"watch","watch":watch.to_json(),"ts":format::now_ms()}).to_string());
+            continue;
+        }
+        let rssi = watch.rssi.map_or("?".to_string(), |r| r.to_string());
+        out(&format!(
+            "{}  watchOS {}  pairing v{}  rssi {}  {}",
+            watch.advertisement.product_type(),
+            watch.watch_os(),
+            watch.advertisement.pairing_version,
+            rssi,
+            watch.address
+        ));
+        let blockers = watch.blockers();
+        if blockers.is_empty() {
+            out("  pairable with upstream: matches the tested Ultra 2 configuration");
+        } else {
+            blockers
+                .iter()
+                .for_each(|b| out(&format!("  not pairable as-is: {b}")));
+        }
+    }
+    if ctx.json {
+        out(
+            &json!({"type":"summary","count":found.len(),"run":run,"ts":format::now_ms()})
+                .to_string(),
+        );
+    } else if let Some(run) = &run {
+        out(&format!("saved: {run}"));
+    }
+    if found.is_empty() {
+        return Err(fail(ctx.json, "TIMEOUT", "no Watch in setup mode was seen"));
+    }
     Ok(())
 }
 
@@ -742,6 +810,7 @@ fn main() -> ExitCode {
         Cmd::Doctor => doctor(&ctx),
         Cmd::Adapters { refresh, action } => adapters(&ctx, refresh, action),
         Cmd::Scan { timeout, keep } => scan(&mut ctx, timeout, keep),
+        Cmd::Identify { timeout, no_save } => identify_cmd(&ctx, timeout, !no_save),
         Cmd::Pair {
             device,
             pin,

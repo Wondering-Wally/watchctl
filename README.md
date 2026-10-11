@@ -106,11 +106,26 @@ Errors in JSON mode are `{"status":"<STATUS>","error":"<message>"}`.
 | 5 | failed or rejected by the Watch |
 | 6 | timeout |
 
+## Identifying a Watch
+
+```sh
+watchctl identify [--timeout 15] [--no-save]
+```
+
+Lists the Apple Watches nearby that are in setup mode (pairing screen open), with each one's model, watchOS version and pairing version. It also says whether upstream's pairing stack can pair it. Upstream only implements the Apple Watch Ultra 2 (`Watch7,5`) with pairing versions 25-26, so any other model is listed with the reason it can't be paired yet.
+
+- This is a passive BlueZ scan that runs separately from the pairing backend, so it doesn't need `watchctld` and doesn't take over the adapter. It connects to nothing and pairs nothing.
+- The adapter must not be in use by `watchctld`; run `watchctl disconnect` first.
+- Each run is saved to `$XDG_STATE_HOME/watch-companion/runs/<ms>/identify.json`. Only the Watch's public setup advertisement is recorded.
+- With `--json`, each Watch is printed as a `{"type":"watch",...}` line, followed by a final `{"type":"summary",...}` line.
+- Exit code 6 means no Watch was seen; exit code 4 means BlueZ could not be used.
+
 ## Tests
 
 ```sh
 cargo test                 # unit tests (dispatch allowlist, socket server, formatting, exit codes)
 tests/fake_host/run.sh     # end-to-end: watchctl + watchctld + the real LinuxBackend
+tests/fake_bluez/run.sh    # end-to-end: watchctl identify against a fake BlueZ on a private D-Bus bus
 ```
 
 `tests/fake_host` puts a fake `java` (protocol host), a fake `busctl` (BlueZ) and an

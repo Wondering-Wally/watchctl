@@ -3,5 +3,6 @@
 pub mod daemon;
 pub mod exit;
 pub mod format;
+pub mod identify;
 pub mod ipc;
 pub mod paths;
